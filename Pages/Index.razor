@@ -34,7 +34,21 @@
                 <small id="projectNamespace" class="form-text text-muted">The project namespace</small>
             </div>
         </div>
+        <div class="form-group row">
+            <label for="language" class="col-sm-1 col-form-label">From Account:</label>
+            <div class="col-sm-10">
 
+                <select id="language" class="form-control mr-sm-2" bind="@language">
+
+                    <option value="0">CSharp</option>
+                    <option value="1">Vb.Net</option>
+                    <option value="3">FSharp</option>
+                </select>
+               
+                <small id="languageHelp" class="form-text text-muted">The language to generate the code</small>
+               
+            </div>
+        </div>
     </div>
 
     <button class="btn btn-primary" onclick=@GenerateCode>Generate code</button>
@@ -45,21 +59,31 @@
     @error
 </div>
 }
+
+
 <div class="row col-sm-10">
     <pre style="max-width:1600px; overflow-x:scroll"><code class="language-csharp" id="codegen_result"></code></pre>
 </div>
+
+<div class="row col-sm-10">
+    <pre style="max-width:1600px; overflow-x:scroll"><code>@fsharpResult</code></pre>
+</div>
+
 @functions {
     string abi;
     string byteCode;
     string projectNamespace;
     string contractName;
     string result;
+    string fsharpResult;
     string error;
+    int language;
 
     private async void GenerateCode()
     {
         try
         {
+            fsharpResult = string.Empty;
             if (string.IsNullOrEmpty(contractName)) { throw new Exception("Contract name cannot be null or empty"); }
             if (string.IsNullOrEmpty(projectNamespace)) { throw new Exception("Namespace cannot be null or empty"); }
             if (string.IsNullOrEmpty(abi)) { throw new Exception("Abi cannot be null or empty and valid json"); }
@@ -73,7 +97,7 @@
             var cqsNamespace = contractName + ".ContractDefinition";
             var dtoNamespace = contractName + ".ContractDefinition";
             var contractAbi = new Nethereum.Generators.Net.GeneratorModelABIDeserialiser().DeserialiseABI(abi);
-            var generator = new ContractProjectGenerator(contractAbi, contractName, byteCode, projectNamespace, serviceNamespace, cqsNamespace, dtoNamespace, "", "/", Nethereum.Generators.Core.CodeGenLanguage.CSharp);
+            var generator = new ContractProjectGenerator(contractAbi, contractName, byteCode, projectNamespace, serviceNamespace, cqsNamespace, dtoNamespace, "", "/", (Nethereum.Generators.Core.CodeGenLanguage)language);
             generator.AddRootNamespaceOnVbProjectsToImportStatements = false;
             var files = generator.GenerateAllMessagesFileAndService();
 
@@ -85,7 +109,14 @@
                 result = result + file.GeneratedCode;
             }
 
-            await JSRuntime.InvokeAsync<object>("setCodeAndHighlight", "codegen_result", result);
+            if(language == 3)
+            {
+                fsharpResult = result;
+            }
+
+            await JSRuntime.InvokeAsync<object>("setCodeAndHighlight", "codegen_result", language, result);
+
+         
 
         }catch(Exception ex)
         {

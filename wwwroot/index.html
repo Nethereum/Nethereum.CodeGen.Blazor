@@ -31,9 +31,21 @@
     <script src="prism.js"></script>
 
     <script language="javascript">
-        window.setCodeAndHighlight= (id, code) => {
+        window.setCodeAndHighlight= (id, language, code) => {
             var element = document.getElementById(id);
-            element.innerHTML = code;
+            element.innerHTML = "";
+            
+            if (language === 0) {
+                element.className = "language-csharp";
+                element.innerHTML = code;
+                
+            }
+            if (language === 1) {
+                element.className = "language-vbnet";
+                element.innerHTML = code;
+                
+            }
+           
             Prism.highlightAll();
         }
     </script>
