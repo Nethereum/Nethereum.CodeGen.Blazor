@@ -1,0 +1,95 @@
+﻿@page "/"
+@inject IJSRuntime JSRuntime
+@using Nethereum.Generators;
+
+<div class="card">
+    <h5 class="card-header">Code Generate Contract Definitions</h5>
+    <div class="card-body">
+
+        <div class="form-group row">
+            <label for="contractName" class="col-sm-1 col-form-label">Contract Name:</label>
+            <div class="col-sm-10">
+                <input id="contractName" class="form-control" bind="@contractName" type="text" />
+                <small id="contractNameHelp" class="form-text text-muted">The contract name</small>
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="abi" class="col-sm-1 col-form-label">Abi:</label>
+            <div class="col-sm-10">
+                <input id="abi" class="form-control" bind="@abi" type="text" />
+                <small id="abiHelp" class="form-text text-muted">The json smart contract abi</small>
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="byteCode" class="col-sm-1 col-form-label">ByteCode:</label>
+            <div class="col-sm-10">
+                <input id="byteCode" class="form-control" bind="@byteCode" type="text" />
+                <small id="byteCodeHelp" class="form-text text-muted">The smart contract byte code for deployment</small>
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="projectNamespace" class="col-sm-1 col-form-label">Project Namespace:</label>
+            <div class="col-sm-10">
+                <input id="projectNamespace" class="form-control" bind="@projectNamespace" type="text" />
+                <small id="projectNamespace" class="form-text text-muted">The project namespace</small>
+            </div>
+        </div>
+
+    </div>
+
+    <button class="btn btn-primary" onclick=@GenerateCode>Generate code</button>
+</div>
+@if (error != null)
+{
+<div class="alert alert-danger" role="alert">
+    @error
+</div>
+}
+<pre><code class="language-csharp" id="codegen_result"></code></pre>
+
+@functions {
+    string abi;
+    string byteCode;
+    string projectNamespace;
+    string contractName;
+    string result;
+    string error;
+
+    private async void GenerateCode()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(contractName)) { throw new Exception("Contract name cannot be null or empty"); }
+            if (string.IsNullOrEmpty(projectNamespace)) { throw new Exception("Namespace cannot be null or empty"); }
+            if (string.IsNullOrEmpty(abi)) { throw new Exception("Abi cannot be null or empty and valid json"); }
+
+
+            error = null;
+            result = String.Empty;
+            //await JSRuntime.InvokeAsync<object>("Prism.highlightAll", null);
+            var serviceNamespace = contractName;
+            //Same, we are generating single file
+            var cqsNamespace = contractName + ".ContractDefinition";
+            var dtoNamespace = contractName + ".ContractDefinition";
+            var contractAbi = new Nethereum.Generators.Net.GeneratorModelABIDeserialiser().DeserialiseABI(abi);
+            var generator = new ContractProjectGenerator(contractAbi, contractName, byteCode, projectNamespace, serviceNamespace, cqsNamespace, dtoNamespace, "", "/", Nethereum.Generators.Core.CodeGenLanguage.CSharp);
+            generator.AddRootNamespaceOnVbProjectsToImportStatements = false;
+            var files = generator.GenerateAllMessagesFileAndService();
+
+            foreach (var file in files)
+            {
+                result = result + "-----------------------------------------" + Environment.NewLine;
+                result = result + file.FileName + Environment.NewLine;
+                result = result + "-----------------------------------------" + Environment.NewLine;
+                result = result + file.GeneratedCode;
+            }
+
+            await JSRuntime.InvokeAsync<object>("setCodeAndHighlight", "codegen_result", result);
+
+        }catch(Exception ex)
+        {
+            error = ex.Message;
+        }
+
+    }
+}
