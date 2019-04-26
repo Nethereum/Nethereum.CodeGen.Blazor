@@ -45,8 +45,9 @@
     @error
 </div>
 }
-<pre><code class="language-csharp" id="codegen_result"></code></pre>
-
+<div class="row col-sm-10">
+    <pre style="max-width:1600px; overflow-x:scroll"><code class="language-csharp" id="codegen_result"></code></pre>
+</div>
 @functions {
     string abi;
     string byteCode;
@@ -78,9 +79,9 @@
 
             foreach (var file in files)
             {
-                result = result + "-----------------------------------------" + Environment.NewLine;
-                result = result + file.FileName + Environment.NewLine;
-                result = result + "-----------------------------------------" + Environment.NewLine;
+                result = result + "//-----------------------------------------" + Environment.NewLine;
+                result = result + "//" + file.FileName + Environment.NewLine;
+                result = result + "//-----------------------------------------" + Environment.NewLine;
                 result = result + file.GeneratedCode;
             }
 
