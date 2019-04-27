@@ -1,5 +1,6 @@
 ﻿@page "/"
 @inject IJSRuntime JSRuntime
+@using Microsoft.JSInterop;
 @using Nethereum.Generators;
 
 <div class="card">
@@ -44,20 +45,21 @@
                     <option value="1">Vb.Net</option>
                     <option value="3">FSharp</option>
                 </select>
-               
+
                 <small id="languageHelp" class="form-text text-muted">The language to generate the code</small>
-               
+
             </div>
         </div>
     </div>
 
     <button class="btn btn-primary" onclick=@GenerateCode>Generate code</button>
+    <button class="btn btn-primary" onclick=@CompileSolidity>Compile</button>
 </div>
 @if (error != null)
 {
-<div class="alert alert-danger" role="alert">
-    @error
-</div>
+    <div class="alert alert-danger" role="alert">
+        @error
+    </div>
 }
 
 
@@ -83,6 +85,7 @@
     {
         try
         {
+
             fsharpResult = string.Empty;
             if (string.IsNullOrEmpty(contractName)) { throw new Exception("Contract name cannot be null or empty"); }
             if (string.IsNullOrEmpty(projectNamespace)) { throw new Exception("Namespace cannot be null or empty"); }
@@ -109,19 +112,45 @@
                 result = result + file.GeneratedCode;
             }
 
-            if(language == 3)
+            if (language == 3)
             {
                 fsharpResult = result;
             }
 
             await JSRuntime.InvokeAsync<object>("setCodeAndHighlight", "codegen_result", language, result);
 
-         
 
-        }catch(Exception ex)
+
+        }
+        catch (Exception ex)
         {
             error = ex.Message;
         }
 
+    }
+
+
+    private async void CompileSolidity()
+    {
+        var contract = @"contract Test {
+     function sum(uint256 val) public returns (uint256){
+         return val + 10;
+     }
+  }";
+
+        var result = await JSRuntime.InvokeAsync<object>("compileSolidity", contract, new DotNetObjectRef(this));
+        abi = result.ToString();
+        StateHasChanged();  
+    }
+
+    
+
+    [JSInvokable("SetCompilationOutput")]
+    public async Task  SetCompilationOutput(string byteCode, string contractName, string abi)
+    {
+        this.byteCode = byteCode;
+        this.contractName = contractName;
+        this.abi = abi;
+        StateHasChanged();   
     }
 }

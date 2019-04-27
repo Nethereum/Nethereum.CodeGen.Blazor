@@ -21,33 +21,101 @@
                     <img src="images/logo192x192.png" class="card-img-top" alt="...">
                     <div class="card-body">
                         <h5 class="card-text text-center"><strong>Nethereum Code generation will load shortly</strong></h5>
-                    </div> 
+                    </div>
                 </div>
             </div>
         </div>
     </app>
 
-    <script src="_framework/blazor.webassembly.js"></script>
     <script src="prism.js"></script>
 
+    <script src="_framework/blazor.webassembly.js"></script>
+    
+    <script src="browser-solc.js" type="text/javascript"></script>
+
     <script language="javascript">
-        window.setCodeAndHighlight= (id, language, code) => {
+        window.setCodeAndHighlight = (id, language, code) => {
             var element = document.getElementById(id);
             element.innerHTML = "";
-            
+
             if (language === 0) {
                 element.className = "language-csharp";
                 element.innerHTML = code;
-                
+
             }
             if (language === 1) {
                 element.className = "language-vbnet";
                 element.innerHTML = code;
-                
+
             }
-           
+
             Prism.highlightAll();
         }
+        window.response = null;
+
+        window.compileSolidity = (solidityCode, callback) => {
+
+
+
+            //window.response = callback;
+            //window.response.invokeMethodAsync('SetCompilationOutput', "1", "2", "3");
+            var contracts = []
+            contracts.push({
+                absolutePath: "browsercontract.sol",
+                code: solidityCode
+            })
+
+            var contractsForCompilation = getContractsForCompilation(contracts);
+            //var compiler = BrowserSolc.getCurrentSolc();
+
+            BrowserSolc.loadVersion("soljson-v0.5.6+commit.b259423e.js", function (compiler) {
+
+                result = compiler.compile(JSON.stringify(contractsForCompilation));
+                alert(result);
+                output = JSON.parse(result);
+                var abi = "";
+                var contractNameOuput = "";
+                var byteCode = "";
+
+                //selecting last one
+                for (var contractName in output.contracts['browsercontract.sol']) {
+                    byteCode = output.contracts['browsercontract.sol'][contractName].evm.bytecode.object;
+                    contractNameOuput = contractName;
+                    abi = JSON.stringify(output.contracts['browsercontract.sol'][contractName].abi);
+                }
+                console.log(abi);
+                console.log(contractNameOuput);
+                console.log(byteCode);
+            });
+        }
+
+        function getContractsForCompilation(contracts) {
+            const contractsForCompilation = {};
+            contracts.forEach(contract => {
+                contractsForCompilation[contract.absolutePath] = { content: contract.code };
+            });
+            const compilation = {
+                language: 'Solidity',
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        // TODO: Make all settings configurable
+                        // Optimize for how many times you intend to run the code.
+                        // Lower values will optimize more for initial deployment cost, higher values will optimize more for high-frequency usage.
+                        runs: 200,
+                    },
+                    outputSelection: {
+                        '*': {
+                            '': ['ast'],
+                            '*': ['abi', 'devdoc', 'userdoc', 'metadata', 'evm.bytecode', 'evm.methodIdentifiers', 'evm.gasEstimates'],
+                        },
+                    },
+                },
+                sources: contractsForCompilation,
+            };
+            return compilation;
+        }
+
     </script>
 </body>
 </html>
